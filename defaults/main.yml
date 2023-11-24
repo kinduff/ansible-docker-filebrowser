@@ -1,0 +1,148 @@
+---
+# Project source code URL: https://github.com/filebrowser/filebrowser
+
+# Enable or disable filebrowser deployment
+filebrowser_enabled: true
+
+# Identifier string for filebrowser resources (e.g. container names, network names)
+filebrowser_identifier: filebrowser
+
+# The scheme used for serving filebrowser (http or https)
+filebrowser_scheme: https
+
+# The hostname at which filebrowser is served
+filebrowser_hostname: ""
+
+# The path at which filebrowser is served, must either be `/` or not end with a slash (e.g. `/filebrowser`)
+filebrowser_path_prefix: /
+
+# Version of filebrowser to deploy
+filebrowser_version: v2
+
+# UID and GID for the container user
+filebrowser_uid: ''
+filebrowser_gid: ''
+
+# Database filename to be mapped
+filebrowser_database_filename: database.db
+
+# Base path for filebrowser resources
+filebrowser_base_path: "{{ filebrowser_identifier }}"
+filebrowser_storage_path: "{{ filebrowser_identifier }}/storage"
+filebrowser_config_path: "{{ filebrowser_base_path }}/config.json"
+filebrowser_database_path: "{{ filebrowser_base_path }}/{{ filebrowser_database_filename }}"
+
+# Timezone configuration for filebrowser
+filebrowser_timezone: UTC
+
+filebrowser_container_image: "{{ filebrowser_container_image_registry_prefix }}/filebrowser/filebrowser:{{ filebrowser_container_image_tag }}"
+filebrowser_container_image_registry_prefix: hub.docker.com
+filebrowser_container_image_tag: "{{ filebrowser_version }}"
+filebrowser_container_image_force_pull: "{{ filebrowser_container_image.endswith(':latest') }}"
+
+# The base container network. It will be auto-created by this role if it doesn't exist already.
+filebrowser_container_network: "{{ filebrowser_identifier }}"
+
+# A list of additional container networks that the container would be connected to.
+# The role does not create these networks, so make sure they already exist.
+# Use this to expose this container to another reverse proxy, which runs in a different container network.
+filebrowser_container_additional_networks: []
+
+# filebrowser_container_labels_traefik_enabled controls whether labels to assist a Traefik reverse-proxy will be attached to the container.
+# See `../templates/labels.j2` for details.
+#
+# To inject your own other container labels, see `filebrowser_container_labels_additional_labels`.
+filebrowser_container_labels_traefik_enabled: true
+filebrowser_container_labels_traefik_docker_network: "{{ filebrowser_container_network }}"
+filebrowser_container_labels_traefik_hostname: "{{ filebrowser_hostname }}"
+# The path prefix must either be `/` or not end with a slash (e.g. `/filebrowser`).
+filebrowser_container_labels_traefik_path_prefix: "{{ filebrowser_path_prefix }}"
+filebrowser_container_labels_traefik_rule: "Host(`{{ filebrowser_container_labels_traefik_hostname }}`){% if filebrowser_container_labels_traefik_path_prefix != '/' %} && PathPrefix(`{{ filebrowser_container_labels_traefik_path_prefix }}`){% endif %}"
+filebrowser_container_labels_traefik_priority: 0
+filebrowser_container_labels_traefik_entrypoints: web-secure
+filebrowser_container_labels_traefik_tls: "{{ filebrowser_container_labels_traefik_entrypoints != 'web' }}"
+filebrowser_container_labels_traefik_tls_certResolver: default # noqa var-naming
+
+# Controls which additional headers to attach to all HTTP responses.
+# To add your own headers, use `filebrowser_container_labels_traefik_additional_response_headers_custom`
+filebrowser_container_labels_traefik_additional_response_headers: "{{ filebrowser_container_labels_traefik_additional_response_headers_auto | combine(filebrowser_container_labels_traefik_additional_response_headers_custom) }}"
+filebrowser_container_labels_traefik_additional_response_headers_auto: |
+  {{
+    {}
+    | combine ({'X-XSS-Protection': filebrowser_http_header_xss_protection} if filebrowser_http_header_xss_protection else {})
+    | combine ({'X-Frame-Options': filebrowser_http_header_frame_options} if filebrowser_http_header_frame_options else {})
+    | combine ({'X-Content-Type-Options': filebrowser_http_header_content_type_options} if filebrowser_http_header_content_type_options else {})
+    | combine ({'Content-Security-Policy': filebrowser_http_header_content_security_policy} if filebrowser_http_header_content_security_policy else {})
+    | combine ({'Permission-Policy': filebrowser_http_header_content_permission_policy} if filebrowser_http_header_content_permission_policy else {})
+    | combine ({'Strict-Transport-Security': filebrowser_http_header_strict_transport_security} if filebrowser_http_header_strict_transport_security and filebrowser_container_labels_traefik_tls else {})
+  }}
+filebrowser_container_labels_traefik_additional_response_headers_custom: {}
+# filebrowser_container_labels_additional_labels contains a multiline string with additional labels to add to the container label file.
+# See `../templates/labels.j2` for details.
+#
+# Example:
+# filebrowser_container_labels_additional_labels: |
+#   my.label=1
+#   another.label="here"
+filebrowser_container_labels_additional_labels: ""
+
+# A list of extra arguments to pass to the container
+filebrowser_container_extra_arguments: []
+
+# List of systemd services that filebrowser.service depends on
+filebrowser_systemd_required_services_list: ["docker.service"]
+
+# Specifies the value of the `X-XSS-Protection` header
+# Stops pages from loading when they detect reflected cross-site scripting (XSS) attacks.
+#
+# Learn more about it is here:
+# - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+# - https://portswigger.net/web-security/cross-site-scripting/reflected
+filebrowser_http_header_xss_protection: "1; mode=block"
+
+# Specifies the value of the `X-Frame-Options` header which controls whether framing can happen.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+filebrowser_http_header_frame_options: SAMEORIGIN
+
+# Specifies the value of the `X-Content-Type-Options` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
+filebrowser_http_header_content_type_options: nosniff
+
+# Specifies the value of the `Content-Security-Policy` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+filebrowser_http_header_content_security_policy: frame-ancestors 'self'
+
+# Specifies the value of the `Permission-Policy` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permission-Policy
+filebrowser_http_header_content_permission_policy: "{{ 'interest-cohort=()' if filebrowser_floc_optout_enabled else '' }}"
+
+# Specifies the value of the `Strict-Transport-Security` header.
+# See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+filebrowser_http_header_strict_transport_security: "max-age=31536000; includeSubDomains{{ '; preload' if filebrowser_hsts_preload_enabled else '' }}"
+
+# Controls whether to send a "Permissions-Policy interest-cohort=();" header along with all responses
+#
+# Learn more about what it is here:
+# - https://www.eff.org/deeplinks/2021/03/googles-floc-terrible-idea
+# - https://paramdeo.com/blog/opting-your-website-out-of-googles-floc-network
+# - https://amifloced.org/
+#
+# Of course, a better solution is to just stop using browsers (like Chrome), which participate in such tracking practices.
+# See: `filebrowser_content_permission_policy`
+filebrowser_floc_optout_enabled: true
+
+# Controls if HSTS preloading is enabled
+#
+# In its strongest and recommended form, the [HSTS policy](https://www.chromium.org/hsts) includes all subdomains, and
+# indicates a willingness to be "preloaded" into browsers:
+# `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`
+# For more information visit:
+# - https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security
+# - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security
+# - https://hstspreload.org/#opt-in
+# See: `filebrowser_http_header_strict_transport_security`
+filebrowser_hsts_preload_enabled: false
+
+# Set default configuration
+filebrowser_config_baseurl: "{{ filebrowser_hostname }}{{ filebrowser_path_prefix }}"
+filebrowser_config_database: "/{{ filebrowser_database_filename }}" # inside the container

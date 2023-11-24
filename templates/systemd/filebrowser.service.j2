@@ -1,0 +1,48 @@
+#jinja2: lstrip_blocks: "True"
+[Unit]
+Description=filebrowser ({{ filebrowser_identifier }})
+{% for service in filebrowser_systemd_required_services_list %}
+Requires={{ service }}
+After={{ service }}
+{% endfor %}
+DefaultDependencies=no
+
+[Service]
+Type=simple
+Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} kill {{ filebrowser_identifier }} 2>/dev/null || true'
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ filebrowser_identifier }} 2>/dev/null || true'
+
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
+			--rm \
+			--name={{ filebrowser_identifier }} \
+			--log-driver=none \
+			--network={{ filebrowser_container_network }} \
+			--user={{ filebrowser_uid }}:{{ filebrowser_gid }} \
+			--cap-drop=ALL \
+			--env-file={{ filebrowser_base_path }}/env \
+			--label-file={{ filebrowser_base_path }}/labels \
+			--mount type=bind,src={{ filebrowser_storage_path }},dst=/srv \
+			--mount type=bind,src={{ filebrowser_database_path }},dst=/database.db \
+			--mount type=bind,src={{ filebrowser_config_path }},dst=/.filebrowser.json \
+			--tmpfs=/tmp:rw,noexec,nosuid,size=512m \
+			{% for arg in filebrowser_container_extra_arguments %}
+			{{ arg }} \
+			{% endfor %}
+			{{ filebrowser_container_image }}
+
+{% for network in filebrowser_container_additional_networks %}
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ filebrowser_identifier }}
+{% endfor %}
+
+ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ filebrowser_identifier }}
+
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} kill {{ filebrowser_identifier }} 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ filebrowser_identifier }} 2>/dev/null || true'
+
+Restart=always
+RestartSec=30
+SyslogIdentifier={{ filebrowser_identifier }}
+
+[Install]
+WantedBy=multi-user.target

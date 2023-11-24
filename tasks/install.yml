@@ -1,0 +1,46 @@
+---
+- name: Ensure filebrowser paths exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0750
+    owner: "{{ filebrowser_uid }}"
+    group: "{{ filebrowser_gid }}"
+  with_items:
+    - "{{ filebrowser_base_path }}"
+    - "{{ filebrowser_storage_path }}"
+
+- name: Ensure filebrowser support files installed
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/{{ item }}.j2"
+    dest: "{{ filebrowser_base_path }}/{{ item }}"
+    mode: 0640
+    owner: "{{ filebrowser_uid }}"
+    group: "{{ filebrowser_gid }}"
+  with_items:
+    - env
+    - labels
+    - database.db
+    - config.json
+
+- name: Ensure filebrowser container image is pulled
+  community.docker.docker_image:
+    name: "{{ filebrowser_container_image }}"
+    source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
+    force_source: "{{ filebrowser_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else filebrowser_container_image_force_pull }}"
+  register: result
+  retries: "{{ devture_playbook_help_container_retries_count }}"
+  delay: "{{ devture_playbook_help_container_retries_delay }}"
+  until: result is not failed
+
+- name: Ensure filebrowser container network is created
+  community.general.docker_network:
+    name: "{{ filebrowser_container_network }}"
+    driver: bridge
+
+- name: Ensure filebrowser systemd service is present
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/systemd/filebrowser.service.j2"
+    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ filebrowser_identifier }}.service"
+    mode: 0644

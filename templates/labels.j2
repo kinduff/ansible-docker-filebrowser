@@ -1,0 +1,40 @@
+{% if filebrowser_container_labels_traefik_enabled %}
+traefik.enable=true
+
+{% if filebrowser_container_labels_traefik_docker_network %}
+traefik.docker.network={{ filebrowser_container_labels_traefik_docker_network }}
+{% endif %}
+
+{% set middlewares = [] %}
+
+{% if filebrowser_container_labels_traefik_path_prefix != '/' %}
+traefik.http.middlewares.{{ filebrowser_identifier }}-slashless-redirect.redirectregex.regex=({{ filebrowser_container_labels_traefik_path_prefix | quote }})$
+traefik.http.middlewares.{{ filebrowser_identifier }}-slashless-redirect.redirectregex.replacement=${1}/
+{% set middlewares = middlewares + [filebrowser_identifier + '-slashless-redirect'] %}
+{% endif %}
+
+{% if filebrowser_container_labels_traefik_additional_response_headers.keys() | length > 0 %}
+{% for name, value in filebrowser_container_labels_traefik_additional_response_headers.items() %}
+traefik.http.middlewares.{{ filebrowser_identifier }}-add-headers.headers.customresponseheaders.{{ name }}={{ value }}
+{% endfor %}
+{% set middlewares = middlewares + [filebrowser_identifier + '-add-headers'] %}
+{% endif %}
+
+traefik.http.routers.{{ filebrowser_identifier }}.rule={{ filebrowser_container_labels_traefik_rule }}
+{% if filebrowser_container_labels_traefik_priority | int > 0 %}
+traefik.http.routers.{{ filebrowser_identifier }}.priority={{ filebrowser_container_labels_traefik_priority }}
+{% endif %}
+traefik.http.routers.{{ filebrowser_identifier }}.service={{ filebrowser_identifier }}
+{% if middlewares | length > 0 %}
+traefik.http.routers.{{ filebrowser_identifier }}.middlewares={{ middlewares | join(',') }}
+{% endif %}
+traefik.http.routers.{{ filebrowser_identifier }}.entrypoints={{ filebrowser_container_labels_traefik_entrypoints }}
+traefik.http.routers.{{ filebrowser_identifier }}.tls={{ filebrowser_container_labels_traefik_tls | to_json }}
+{% if filebrowser_container_labels_traefik_tls %}
+traefik.http.routers.{{ filebrowser_identifier }}.tls.certResolver={{ filebrowser_container_labels_traefik_tls_certResolver }}
+{% endif %}
+
+traefik.http.services.{{ filebrowser_identifier }}.loadbalancer.server.port=80
+{% endif %}
+
+{{ filebrowser_container_labels_additional_labels }}

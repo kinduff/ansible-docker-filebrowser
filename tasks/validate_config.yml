@@ -1,0 +1,33 @@
+---
+- name: Fail if required filebrowser settings not defined
+  ansible.builtin.fail:
+    msg: >
+      You need to define a required configuration setting (`{{ item }}`).
+  when: "vars[item] == ''"
+  with_items:
+    - filebrowser_identifier
+    - filebrowser_uid
+    - filebrowser_gid
+    - filebrowser_hostname
+    - filebrowser_path_prefix
+    - filebrowser_container_network
+
+- when: filebrowser_container_labels_traefik_enabled | bool
+  block:
+    - name: Fail if required filebrowser Traefik settings not defined
+      ansible.builtin.fail:
+        msg: >-
+          You need to define a required configuration setting (`{{ item }}`).
+      when: "vars[item] == ''"
+      with_items:
+        - filebrowser_container_labels_traefik_hostname
+        - filebrowser_container_labels_traefik_path_prefix
+
+    # We ensure it doesn't end with a slash, because we handle both (slash and no-slash).
+    # Knowing that `filebrowser_container_labels_traefik_path_prefix` does not end with a slash
+    # ensures we know how to set these routes up without having to do "does it end with a slash" checks elsewhere.
+    - name: Fail if filebrowser_container_labels_traefik_path_prefix ends with a slash
+      ansible.builtin.fail:
+        msg: >-
+          filebrowser_container_labels_traefik_path_prefix (`{{ filebrowser_container_labels_traefik_path_prefix }}`) must either be `/` or not end with a slash (e.g. `/filebrowser`).
+      when: "filebrowser_container_labels_traefik_path_prefix != '/' and filebrowser_container_labels_traefik_path_prefix[-1] == '/'"

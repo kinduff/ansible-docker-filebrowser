@@ -1,0 +1,24 @@
+---
+- name: Check existence of filebrowser systemd service
+  ansible.builtin.stat:
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ filebrowser_identifier }}.service"
+  register: filebrowser_service_stat
+
+- when: filebrowser_service_stat.stat.exists | bool
+  block:
+    - name: Ensure filebrowser systemd service is stopped
+      ansible.builtin.service:
+        name: "{{ filebrowser_identifier }}"
+        state: stopped
+        enabled: false
+        daemon_reload: true
+
+    - name: Ensure filebrowser systemd service does not exists
+      ansible.builtin.file:
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ filebrowser_identifier }}.service"
+        state: absent
+
+    - name: Ensure filebrowser path doesn't exist
+      ansible.builtin.file:
+        path: "{{ filebrowser_base_path }}"
+        state: absent
