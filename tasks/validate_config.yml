@@ -11,6 +11,8 @@
     - filebrowser_hostname
     - filebrowser_path_prefix
     - filebrowser_container_network
+    - filebrowser_storage_path
+    - filebrowser_database_path
 
 - when: filebrowser_container_labels_traefik_enabled | bool
   block:

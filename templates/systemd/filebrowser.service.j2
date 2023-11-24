@@ -24,7 +24,6 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
 			--label-file={{ filebrowser_base_path }}/labels \
 			--mount type=bind,src={{ filebrowser_storage_path }},dst=/srv \
 			--mount type=bind,src={{ filebrowser_database_path }},dst=/database.db \
-			--mount type=bind,src={{ filebrowser_config_path }},dst=/.filebrowser.json \
 			--tmpfs=/tmp:rw,noexec,nosuid,size=512m \
 			{% for arg in filebrowser_container_extra_arguments %}
 			{{ arg }} \

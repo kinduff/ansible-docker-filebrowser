@@ -20,8 +20,17 @@
   with_items:
     - env
     - labels
+
+- name: Ensure filebrowser only created if not exist database file installed
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/{{ item }}.j2"
+    dest: "{{ filebrowser_base_path }}/{{ item }}"
+    mode: 0640
+    owner: "{{ filebrowser_uid }}"
+    group: "{{ filebrowser_gid }}"
+    force: no
+  with_items:
     - database.db
-    - config.json
 
 - name: Ensure filebrowser container image is pulled
   community.docker.docker_image:
