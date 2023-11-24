@@ -34,7 +34,7 @@ traefik.http.routers.{{ filebrowser_identifier }}.tls={{ filebrowser_container_l
 traefik.http.routers.{{ filebrowser_identifier }}.tls.certResolver={{ filebrowser_container_labels_traefik_tls_certResolver }}
 {% endif %}
 
-traefik.http.services.{{ filebrowser_identifier }}.loadbalancer.server.port=80
+traefik.http.services.{{ filebrowser_identifier }}.loadbalancer.server.port=8080
 {% endif %}
 
 {{ filebrowser_container_labels_additional_labels }}
