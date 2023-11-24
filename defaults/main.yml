@@ -36,7 +36,7 @@ filebrowser_database_path: "{{ filebrowser_base_path }}/{{ filebrowser_database_
 filebrowser_timezone: UTC
 
 filebrowser_container_image: "{{ filebrowser_container_image_registry_prefix }}/filebrowser/filebrowser:{{ filebrowser_container_image_tag }}"
-filebrowser_container_image_registry_prefix: hub.docker.com
+filebrowser_container_image_registry_prefix: docker.io
 filebrowser_container_image_tag: "{{ filebrowser_version }}"
 filebrowser_container_image_force_pull: "{{ filebrowser_container_image.endswith(':latest') }}"
 
