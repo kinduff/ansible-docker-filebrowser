@@ -28,7 +28,7 @@ filebrowser_database_filename: database.db
 
 # Base path for filebrowser resources
 filebrowser_base_path: "{{ filebrowser_identifier }}"
-filebrowser_storage_path: "{{ filebrowser_identifier }}/storage"
+filebrowser_storage_path: "{{ filebrowser_base_path }}/storage"
 filebrowser_config_path: "{{ filebrowser_base_path }}/config.json"
 filebrowser_database_path: "{{ filebrowser_base_path }}/{{ filebrowser_database_filename }}"
 
